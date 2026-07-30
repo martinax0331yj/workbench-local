@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    background-color: #F7F5F2;
+    color: #25242A;
+    overflow: hidden;
+  }
+
+  input, textarea, select {
+    font-size: 16px; /* prevent iOS zoom on focus */
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white rounded-2xl border border-gray-50 p-4 sm:p-6;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03), 0 4px 16px rgba(0, 0, 0, 0.04);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  .card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05), 0 8px 24px rgba(0, 0, 0, 0.06);
+    transform: translateY(-2px);
+  }
+
+  .page-container {
+    max-width: 1440px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .page-header {
+    @apply mb-4 sm:mb-6;
+  }
+
+  .page-title {
+    @apply font-serif text-xl sm:text-2xl lg:text-3xl text-text-primary tracking-wide;
+  }
+
+  .section-title {
+    @apply text-base sm:text-lg font-semibold text-text-primary mb-3 sm:mb-4;
+  }
+
+  .text-caption {
+    @apply text-[11px] sm:text-xs text-text-muted;
+  }
+
+  .text-body-sm {
+    @apply text-[13px] sm:text-sm;
+  }
+
+  /* Mobile modal: fullscreen */
+  .modal-mobile {
+    @apply fixed inset-0 z-50 flex items-end sm:items-center justify-center;
+  }
+
+  .modal-mobile-content {
+    @apply bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6;
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.1);
+  }
+
+  /* Tag styles */
+  .tag {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-[11px] sm:text-xs font-medium;
+  }
+
+  .tag-warm { @apply bg-warm-light text-warm-brown; }
+  .tag-purple { @apply bg-mist-light text-mist-purple; }
+  .tag-blue { @apply bg-blue-50 text-mist-blue; }
+  .tag-green { @apply bg-green-50 text-mint-green; }
+  .tag-pink { @apply bg-pink-50 text-bare-pink; }
+
+  /* Progress bar */
+  .progress-bar {
+    @apply h-1.5 bg-cream rounded-full overflow-hidden;
+  }
+
+  .progress-fill {
+    @apply h-full bg-warm-brown rounded-full transition-all duration-500;
+  }
+
+  /* Scrollbar */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #e5e3e0;
+    border-radius: 2px;
+  }
+
+  /* Animations */
+  @keyframes slideInLeft {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+  }
+
+  @keyframes slideInUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
