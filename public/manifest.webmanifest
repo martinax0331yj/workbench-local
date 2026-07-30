@@ -1,0 +1,18 @@
+{
+  "name": "研究工作站",
+  "short_name": "工作站",
+  "description": "个人研究工作台 - 文献、论文、行业研究、学习管理",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F7F5F2",
+  "theme_color": "#8B7355",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

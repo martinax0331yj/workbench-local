@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
+import QuickCapture from '../mobile/QuickCapture';
 import { useStore } from '../../store';
 import { Home, Play, BookOpen, FileText, Briefcase, TrendingUp, Calendar } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -58,6 +59,9 @@ export default function Layout() {
             <Outlet />
           </div>
         </main>
+
+        {/* Mobile Quick Capture FAB */}
+        <QuickCapture />
 
         {/* Mobile Bottom Tab Bar */}
         <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-100 z-30 safe-area-bottom">

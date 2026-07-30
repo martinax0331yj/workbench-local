@@ -98,12 +98,17 @@ export interface AppStore {
   updateThesis: (partial: Partial<Thesis>) => void;
 
   researchIdeas: ResearchIdea[];
+  addResearchIdea: (r: Omit<ResearchIdea, 'id' | 'createdAt' | 'updatedAt'>) => string;
   updateResearchIdea: (id: string, partial: Partial<ResearchIdea>) => void;
+  deleteResearchIdea: (id: string) => void;
 
   policies: Policy[];
   cases: CaseStudy[];
   reports: Report[];
   readingNotes: ReadingNote[];
+  addReadingNote: (n: Omit<ReadingNote, 'id' | 'createdAt' | 'updatedAt'>) => string;
+  updateReadingNote: (id: string, partial: Partial<ReadingNote>) => void;
+  deleteReadingNote: (id: string) => void;
 
   financePlans: FinancePlan[];
   financeRecords: FinanceRecord[];
@@ -324,14 +329,29 @@ export const useStore = create<AppStore>()(
       thesis: defaultState.thesis,
       updateThesis: (partial) => set((s) => ({ thesis: s.thesis ? { ...s.thesis, ...partial } : null })),
       researchIdeas: defaultState.researchIdeas,
+      addResearchIdea: (r) => {
+        const id = uid();
+        set((s) => ({ researchIdeas: [...s.researchIdeas, { ...r, id, createdAt: now(), updatedAt: now() }] }));
+        return id;
+      },
       updateResearchIdea: (id, partial) => set((s) => ({
         researchIdeas: s.researchIdeas.map(i => i.id === id ? { ...i, ...partial } : i)
       })),
+      deleteResearchIdea: (id) => set((s) => ({ researchIdeas: s.researchIdeas.filter(i => i.id !== id) })),
 
       policies: defaultState.policies,
       cases: defaultState.cases,
       reports: defaultState.reports,
       readingNotes: defaultState.readingNotes,
+      addReadingNote: (n) => {
+        const id = uid();
+        set((s) => ({ readingNotes: [...s.readingNotes, { ...n, id, createdAt: now(), updatedAt: now() }] }));
+        return id;
+      },
+      updateReadingNote: (id, partial) => set((s) => ({
+        readingNotes: s.readingNotes.map(n => n.id === id ? { ...n, ...partial } : n)
+      })),
+      deleteReadingNote: (id) => set((s) => ({ readingNotes: s.readingNotes.filter(n => n.id !== id) })),
 
       financePlans: defaultState.financePlans,
       financeRecords: defaultState.financeRecords,

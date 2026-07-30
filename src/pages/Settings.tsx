@@ -160,6 +160,19 @@ export default function SettingsPage() {
             <p className="text-caption text-text-muted">建议定期导出备份。部署后手机与电脑数据不共享，可通过导出/导入功能实现数据迁移。</p>
           </div>
 
+          <div className="card bg-cream/60 border border-amber-100">
+            <h3 className="section-title !text-sm flex items-center gap-1.5">
+              <Smartphone size={15} className="text-amber-500" />
+              手机端使用提示
+            </h3>
+            <p className="text-sm text-text-secondary mb-1.5">
+              在手机浏览器打开网址后，点击「<strong>分享</strong>」→「<strong>添加到主屏幕</strong>」，即可像 App 一样全屏使用。
+            </p>
+            <p className="text-caption text-text-muted">
+              数据保存在本机浏览器中，清缓存会导致数据丢失，请定期导出备份。
+            </p>
+          </div>
+
           {importMsg && (
             <div className={`px-4 py-3 rounded-xl text-sm font-medium ${importMsg.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
               {importMsg.text}
