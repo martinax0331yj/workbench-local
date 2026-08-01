@@ -17,15 +17,15 @@ export default function ShortPapers() {
   const delPaper = shortPapers.find(p => p.id === deleteTarget);
 
   const handleCreate = () => {
-    if (!newPaper.title.trim()) { toast.error('请输入论文标题'); return; }
+    if (!newPaper.title.trim()) { toast('error', '请输入论文标题'); return; }
     addShortPaper({
-      title: newPaper.title, type: newPaper.type as any, stage: newPaper.stage,
+      title: newPaper.title, type: newPaper.type, stage: newPaper.stage,
       researchQuestion: newPaper.researchQuestion, methodology: newPaper.methodology,
       progress: 0, chapters: [], writingTasks: [],
-      deadline: newPaper.deadline || null, targetJournal: '', dataSource: '', collaborators: [],
-      nextStep: '', versions: [], submissions: [], archived: false
-    });
-    toast.success('小论文已创建');
+      deadline: newPaper.deadline || undefined, targetJournal: '', dataSource: '', collaborators: [],
+      nextStep: '', linkedTheoryIds: [], linkedMethodIds: [], linkedLiteratureIds: [], timeLine: [],
+    } as any);
+    toast('success', '小论文已创建');
     setNewPaper({ title: '', type: '期刊论文', stage: '研究想法', researchQuestion: '', methodology: '', deadline: '' });
     setShowCreate(false);
   };
@@ -35,7 +35,7 @@ export default function ShortPapers() {
       <div className="page-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="page-title">小论文</h1>
-          <p className="text-body-sm text-text-muted mt-1">{shortPapers.filter(p => !p.archived).length} 个项目</p>
+          <p className="text-body-sm text-text-muted mt-1">{shortPapers.filter((p: any) => !p.archived).length} 个项目</p>
         </div>
         <button onClick={() => setShowCreate(true)} className="inline-flex items-center gap-1.5 px-4 py-2 bg-warm-brown text-white rounded-xl text-sm font-medium self-start sm:self-auto hover:bg-warm-brown/90 transition-colors">
           <Plus size={15} /> 新建论文
@@ -50,7 +50,7 @@ export default function ShortPapers() {
         </div>
       ) : (
         <div className="space-y-3 sm:space-y-4">
-          {shortPapers.filter(p => !p.archived).map(p => {
+          {shortPapers.filter((p: any) => !p.archived).map(p => {
             const stageIdx = paperStages.indexOf(p.stage);
             return (
               <div key={p.id} className="card !p-4 sm:!p-5 cursor-pointer group">
@@ -78,7 +78,7 @@ export default function ShortPapers() {
 
                   <div className="flex items-center gap-1 self-end sm:self-center">
                     <button
-                      onClick={(e) => { e.stopPropagation(); archiveShortPaper(p.id); toast.success('已归档'); }}
+                      onClick={(e) => { e.stopPropagation(); archiveShortPaper(p.id); toast('success', '已归档'); }}
                       className="p-1.5 rounded-lg hover:bg-gray-100 text-text-muted opacity-0 group-hover:opacity-100 transition-all"
                       title="归档"
                     >
@@ -277,7 +277,7 @@ export default function ShortPapers() {
       <ConfirmDialog
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        onConfirm={() => { if (deleteTarget) { deleteShortPaper(deleteTarget); toast.success('小论文已删除'); setDeleteTarget(null); if (selectedId === deleteTarget) setSelectedId(null); } }}
+        onConfirm={() => { if (deleteTarget) { deleteShortPaper(deleteTarget); toast('success', '小论文已删除'); setDeleteTarget(null); if (selectedId === deleteTarget) setSelectedId(null); } }}
         title="删除小论文"
         message="删除后将无法恢复，论文的基本信息将会丢失。"
         itemName={delPaper?.title}
@@ -288,18 +288,18 @@ export default function ShortPapers() {
       />
 
       {/* Archived Papers */}
-      {shortPapers.filter(p => p.archived).length > 0 && (
+      {shortPapers.filter((p: any) => p.archived).length > 0 && (
         <div className="mt-8">
           <h2 className="text-sm font-medium text-text-muted mb-3">已归档</h2>
           <div className="space-y-2">
-            {shortPapers.filter(p => p.archived).map(p => (
+            {shortPapers.filter((p: any) => p.archived).map(p => (
               <div key={p.id} className="card !p-3 flex items-center justify-between opacity-60 hover:opacity-100 transition-opacity">
                 <div>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-text-muted mr-2">{p.type}</span>
                   <span className="text-sm text-text-secondary">{p.title}</span>
                 </div>
                 <button
-                  onClick={() => { restoreShortPaper(p.id); toast.success('已恢复'); }}
+                  onClick={() => { restoreShortPaper(p.id); toast('success', '已恢复'); }}
                   className="p-1.5 rounded-lg hover:bg-mint-light/50 text-text-muted hover:text-mint-green transition-colors"
                 >
                   <RotateCcw size={14} />

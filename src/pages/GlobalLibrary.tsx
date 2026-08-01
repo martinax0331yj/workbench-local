@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Search, Database, BookOpen, FileText, Briefcase, Lightbulb, BookMarked } from 'lucide-react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Search, Database, BookOpen, FileText, Briefcase, Lightbulb, BookMarked, ArrowUpRight } from 'lucide-react';
 import { useStore } from '../store';
 import { formatDateShort } from '../utils';
 
@@ -9,6 +9,14 @@ export default function GlobalLibrary() {
   const [searchParams] = useSearchParams();
   const [query, setQuery] = useState(searchParams.get('q') || '');
   const [module, setModule] = useState<string>('all');
+
+  const navigate = useNavigate();
+
+  const linkMap: Record<string, string> = {
+    '文献': '/academic/literature', '理论': '/academic/theory', '方法': '/academic/method',
+    '政策': '/industry/policies', '案例': '/industry/cases', '读书笔记': '/industry/notes',
+    '论文': '/papers/short', '研究想法': '/papers/ideas',
+  };
 
   const allResults = [
     ...(module === 'all' || module === 'literature' ? literatures.map(l => ({ id: l.id, type: '文献' as const, title: l.title, subtitle: l.authors.join(', '), icon: BookOpen, color: 'text-mist-blue', date: l.updatedAt })) : []),
@@ -78,7 +86,9 @@ export default function GlobalLibrary() {
           <p className="text-caption text-text-muted mb-3">{filtered.length} 条结果</p>
           <div className="space-y-1.5">
             {filtered.map(r => (
-              <div key={r.id} className="card !p-3 sm:!p-4 flex items-center gap-3 hover:border-warm-brown/20 cursor-pointer transition-colors">
+              <div key={r.id}
+                onClick={() => { const path = linkMap[r.type]; if (path) navigate(path); }}
+                className="card !p-3 sm:!p-4 flex items-center gap-3 hover:border-warm-brown/20 cursor-pointer transition-colors group">
                 <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
                   r.type === '文献' ? 'bg-blue-50' :
                   r.type === '理论' ? 'bg-orange-50' :
@@ -98,6 +108,7 @@ export default function GlobalLibrary() {
                 <div className="flex flex-col items-end gap-0.5 flex-shrink-0 ml-2">
                   <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-text-muted">{r.type}</span>
                   <span className="text-[10px] text-text-muted hidden sm:inline">{formatDateShort(r.date)}</span>
+                  <ArrowUpRight size={12} className="text-text-muted opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block" />
                 </div>
               </div>
             ))}

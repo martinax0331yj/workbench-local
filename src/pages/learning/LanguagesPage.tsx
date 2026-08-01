@@ -1,114 +1,174 @@
 import { useState } from 'react';
-import { Languages, Check, Flame, Volume2 } from 'lucide-react';
 import { useStore } from '../../store';
-
-const languageLabels: Record<string, string> = { 'english': '英语', 'thai': '泰语', 'korean': '韩语' };
+import { formatRelative } from '../../utils';
+import { Languages, Plus, X, Trash2, Edit3, CheckCircle2, Flame } from 'lucide-react';
 
 export default function LanguagesPage() {
-  const { learningTasks, toggleLearningTask } = useStore();
-  const [lang, setLang] = useState('english');
+  const { languageLearnings, addLanguageLearning, updateLanguageLearning, deleteLanguageLearning } = useStore();
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [delId, setDelId] = useState<string | null>(null);
+  const [form, setForm] = useState({ language: '', level: '', dailyGoal: '', currentStreak: '' });
 
-  const langTasks = learningTasks.filter(t => t.language === lang);
-  const todayTasks = langTasks.filter(t => {
+  const resetForm = () => { setForm({ language: '', level: '', dailyGoal: '', currentStreak: '' }); setEditingId(null); };
+  const openCreate = () => { resetForm(); setShowForm(true); };
+  const openEdit = (l: any) => {
+    setEditingId(l.id);
+    setForm({
+      language: l.language, level: l.level || '', dailyGoal: l.dailyGoal || '',
+      currentStreak: l.currentStreak ? String(l.currentStreak) : '',
+    });
+    setShowForm(true);
+  };
+
+  const handleSubmit = () => {
+    if (!form.language.trim()) return;
+    const base = {
+      language: form.language.trim(), level: form.level.trim() || undefined,
+      dailyGoal: form.dailyGoal.trim() || undefined,
+      currentStreak: form.currentStreak ? Number(form.currentStreak) : undefined,
+    };
+    if (editingId) {
+      updateLanguageLearning(editingId, base as any);
+    } else {
+      addLanguageLearning({ ...base, checkIns: [], tasks: [] } as any);
+    }
+    setShowForm(false); resetForm();
+  };
+
+  const handleToggleCheckIn = (l: any) => {
     const today = new Date().toISOString().split('T')[0];
-    return t.date === today;
-  });
-  const streak = 12; // mock
+    const checkIns = l.checkIns || [];
+    const hasToday = checkIns.some((c: any) => c.date === today);
+    const newCheckIns = hasToday
+      ? checkIns.filter((c: any) => c.date !== today)
+      : [...checkIns, { date: today, minutes: 30, completed: true }];
+    
+    const sorted = [...newCheckIns].sort((a: any, b: any) => b.date.localeCompare(a.date));
+    let streak = 0;
+    const now = new Date();
+    for (let i = 0; i < sorted.length; i++) {
+      const expected = new Date(now);
+      expected.setDate(expected.getDate() - i);
+      const expDate = expected.toISOString().split('T')[0];
+      if (sorted[i].date === expDate) streak++;
+      else break;
+    }
+    
+    updateLanguageLearning(l.id, { checkIns: newCheckIns, currentStreak: streak } as any);
+  };
 
   return (
     <div>
-      <div className="page-header">
-        <h1 className="page-title">多语种学习</h1>
-        <p className="text-body-sm text-text-muted mt-1">连续 {streak} 天</p>
+      <div className="page-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="page-title">语言学习</h1>
+          <p className="text-body-sm text-text-muted mt-1">多语言学习进度追踪</p>
+        </div>
+        <button onClick={openCreate} className="btn-primary flex items-center gap-1.5">
+          <Plus size={16} /> <span>添加语言</span>
+        </button>
       </div>
 
-      {/* Language tabs */}
-      <div className="flex overflow-x-auto gap-1.5 mb-4 sm:mb-5 scrollbar-thin">
-        {Object.entries(languageLabels).map(([key, label]) => (
-          <button key={key} onClick={() => setLang(key)}
-            className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${lang === key ? 'bg-warm-brown text-white' : 'bg-white border border-gray-100 text-text-secondary hover:bg-cream'}`}>
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4 sm:mb-5">
-        <div className="card !p-3 sm:!p-4 text-center">
-          <Flame size={20} className="mx-auto text-warm-brown mb-1" />
-          <p className="text-lg sm:text-xl font-semibold text-text-primary">{streak}</p>
-          <p className="text-caption text-text-muted">连续学习</p>
+      {languageLearnings.length === 0 ? (
+        <div className="card text-center py-12">
+          <Languages size={40} className="mx-auto text-text-muted mb-3 opacity-40" />
+          <p className="text-text-secondary">暂未添加语言学习计划</p>
+          <p className="text-caption text-text-muted mt-1">点击右上角开始</p>
         </div>
-        <div className="card !p-3 sm:!p-4 text-center">
-          <Volume2 size={20} className="mx-auto text-mist-purple mb-1" />
-          <p className="text-lg sm:text-xl font-semibold text-text-primary">{langTasks.filter(t => t.completed).length}</p>
-          <p className="text-caption text-text-muted">已完成</p>
-        </div>
-        <div className="card !p-3 sm:!p-4 text-center">
-          <Languages size={20} className="mx-auto text-mist-blue mb-1" />
-          <p className="text-lg sm:text-xl font-semibold text-text-primary">{langTasks.length}</p>
-          <p className="text-caption text-text-muted">总任务</p>
-        </div>
-        <div className="card !p-3 sm:!p-4 text-center">
-          <Check size={20} className="mx-auto text-mint-green mb-1" />
-          <p className="text-lg sm:text-xl font-semibold text-text-primary">{todayTasks.filter(t => t.completed).length}</p>
-          <p className="text-caption text-text-muted">今日完成</p>
-        </div>
-      </div>
-
-      {/* Today tasks */}
-      <div className="card mb-4 sm:mb-5">
-        <h3 className="section-title !text-sm">今日任务</h3>
-        {todayTasks.length === 0 ? (
-          <p className="text-body-sm text-text-muted text-center py-4">今日暂无学习任务</p>
-        ) : (
-          <div className="space-y-1.5">
-            {todayTasks.map(task => (
-              <div key={task.id}
-                onClick={() => toggleLearningTask(task.id)}
-                className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-cream cursor-pointer transition-colors">
-                <button className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                  task.completed ? 'bg-warm-brown border-warm-brown' : 'border-gray-200'
-                }`}>
-                  {task.completed && <Check size={11} className="text-white" strokeWidth={3} />}
-                </button>
-                <div className="flex-1 min-w-0">
-                  <p className={`text-[13px] sm:text-sm ${task.completed ? 'text-text-muted line-through' : 'text-text-primary'}`}>{task.title}</p>
-                  {task.note && <p className="text-caption text-text-muted">{task.note}</p>}
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {languageLearnings.map((l: any) => (
+            <div key={l.id} className="card !p-4 relative">
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-text-primary">{l.language}</h3>
+                  {l.level && <p className="text-[11px] text-text-muted">{l.level}</p>}
                 </div>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                  task.type === 'listening' ? 'bg-blue-50 text-mist-blue' :
-                  task.type === 'speaking' ? 'bg-warm-light text-warm-brown' :
-                  'bg-mist-light/30 text-mist-purple'
-                }`}>
-                  {task.type === 'listening' ? '听力' : task.type === 'speaking' ? '口语' : '阅读'}
-                </span>
+                <div className="flex items-center gap-0.5">
+                  <button onClick={() => openEdit(l)} className="w-7 h-7 rounded-lg flex items-center justify-center text-text-muted hover:bg-cream"><Edit3 size={13} /></button>
+                  <button onClick={() => setDelId(l.id)} className="w-7 h-7 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-50"><Trash2 size={13} /></button>
+                </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
 
-      {/* All tasks */}
-      <div className="card">
-        <h3 className="section-title !text-sm">所有任务</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {langTasks.map(task => (
-            <div key={task.id} onClick={() => toggleLearningTask(task.id)}
-              className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-cream cursor-pointer transition-colors">
-              <button className={`w-4.5 h-4.5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                task.completed ? 'bg-warm-brown border-warm-brown' : 'border-gray-200'
-              }`}>
-                {task.completed && <Check size={10} className="text-white" strokeWidth={3} />}
-              </button>
-              <div className="flex-1 min-w-0">
-                <p className={`text-[12px] sm:text-[13px] ${task.completed ? 'text-text-muted line-through' : 'text-text-primary'}`}>{task.title}</p>
-                {task.date && <p className="text-[10px] text-text-muted">{task.date}</p>}
+              <div className="flex items-center gap-4 mb-3">
+                <div className="flex items-center gap-1.5">
+                  <Flame size={16} className={l.currentStreak > 0 ? 'text-orange-500' : 'text-text-muted'} />
+                  <span className="text-sm font-semibold text-text-primary">{l.currentStreak || 0}</span>
+                  <span className="text-[10px] text-text-muted">天</span>
+                </div>
+                {l.dailyGoal && <span className="text-[11px] text-text-muted">目标: {l.dailyGoal}</span>}
               </div>
+
+              <button onClick={() => handleToggleCheckIn(l)}
+                className={`w-full py-2 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${
+                  (l.checkIns || []).some((c: any) => c.date === new Date().toISOString().split('T')[0])
+                    ? 'bg-mint-light/40 text-mint-green border border-mint-green/20'
+                    : 'bg-gray-100 text-text-muted hover:bg-gray-200'
+                }`}>
+                <CheckCircle2 size={14} fill={(l.checkIns || []).some((c: any) => c.date === new Date().toISOString().split('T')[0]) ? 'currentColor' : 'none'} />
+                {(l.checkIns || []).some((c: any) => c.date === new Date().toISOString().split('T')[0]) ? '今日已打卡' : '打卡签到'}
+              </button>
+
+              <p className="text-[10px] text-text-muted mt-3 text-center">更新于 {formatRelative(l.updatedAt)}</p>
             </div>
           ))}
         </div>
-      </div>
+      )}
+
+      {showForm && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-12 sm:pt-24 px-4">
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => { setShowForm(false); resetForm(); }} />
+          <div className="relative bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-md max-h-[80vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white rounded-t-2xl border-b px-5 py-3.5 flex items-center justify-between">
+              <h3 className="font-semibold text-text-primary">{editingId ? '编辑语言' : '添加语言'}</h3>
+              <button onClick={() => { setShowForm(false); resetForm(); }} className="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted hover:bg-gray-100"><X size={16} /></button>
+            </div>
+            <div className="p-5 space-y-3.5">
+              <div>
+                <label className="block text-xs font-medium text-text-secondary mb-1">语言 *</label>
+                <input value={form.language} onChange={e => setForm(p => ({ ...p, language: e.target.value }))}
+                  placeholder="如: 英语、日语、法语" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-warm-brown/20" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-text-secondary mb-1">当前水平</label>
+                <input value={form.level} onChange={e => setForm(p => ({ ...p, level: e.target.value }))}
+                  placeholder="如: B1, N3" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-warm-brown/20" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-text-secondary mb-1">每日目标</label>
+                <input value={form.dailyGoal} onChange={e => setForm(p => ({ ...p, dailyGoal: e.target.value }))}
+                  placeholder="如: 30分钟、1节课" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-warm-brown/20" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-text-secondary mb-1">当前连续天数</label>
+                <input value={form.currentStreak} onChange={e => setForm(p => ({ ...p, currentStreak: e.target.value }))} type="number"
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-warm-brown/20" />
+              </div>
+            </div>
+            <div className="sticky bottom-0 bg-white border-t px-5 py-3.5 flex gap-3 rounded-b-2xl">
+              <button onClick={() => { setShowForm(false); resetForm(); }} className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-text-secondary">取消</button>
+              <button onClick={handleSubmit} disabled={!form.language.trim()}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-warm-brown text-white text-sm font-medium hover:bg-warm-brown/90 disabled:opacity-40">{editingId ? '保存' : '创建'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {delId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setDelId(null)} />
+          <div className="relative bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-sm p-6">
+            <h3 className="font-semibold text-text-primary mb-2">确认删除</h3>
+            <p className="text-sm text-text-secondary mb-4">确定要删除此语言学习记录吗？</p>
+            <div className="flex gap-3">
+              <button onClick={() => setDelId(null)} className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-text-secondary">取消</button>
+              <button onClick={() => { deleteLanguageLearning(delId); setDelId(null); }}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-red-500 text-white text-sm font-medium">删除</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

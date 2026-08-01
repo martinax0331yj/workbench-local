@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Filter, Grid3X3, List, Archive, Star, Trash2, X, ChevronDown, BookOpen, ExternalLink } from 'lucide-react';
+import { Search, Filter, Grid3X3, List, Archive, Star, Trash2, X, ChevronDown, BookOpen, ExternalLink, Plus, Edit3 } from 'lucide-react';
 import { useStore } from '../../store';
 import { formatRelative, formatDateShort } from '../../utils';
 import { ConfirmDialog, useToast } from '../../components/common';
@@ -14,7 +14,7 @@ const statusColors: Record<ReadingStatus, string> = {
 };
 
 export default function LiteratureLibrary() {
-  const { literatures, addLiterature, toggleStarLiterature, deleteLiterature, updateLiteratureStatus } = useStore();
+  const { literatures, addLiterature, toggleStarLiterature, deleteLiterature, updateLiteratureStatus, updateLiterature } = useStore();
   const { toast } = useToast();
   const [view, setView] = useState<'card' | 'table'>('card');
   const [search, setSearch] = useState('');
@@ -22,8 +22,11 @@ export default function LiteratureLibrary() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [newLit, setNewLit] = useState({ title: '', authors: '', year: new Date().getFullYear().toString(), journal: '', doi: '', abstract: '', keywords: '', link: '', type: '期刊论文' });
+  const [editLit, setEditLit] = useState<Literature | null>(null);
+  const [editForm, setEditForm] = useState({ title: '', authors: '', year: '', journal: '', doi: '', researchQuestion: '', keywords: '', literatureType: '' });
 
   let filtered = literatures;
   if (statusFilter !== 'all') filtered = filtered.filter(l => l.readingStatus === statusFilter);
@@ -34,11 +37,42 @@ export default function LiteratureLibrary() {
 
   const selected = selectedId ? literatures.find(l => l.id === selectedId) : null;
 
+  const openEdit = (lit: Literature) => {
+    setEditLit(lit);
+    setEditForm({
+      title: lit.title, authors: lit.authors.join(', '), year: String(lit.year),
+      journal: lit.journal || '', doi: lit.doi || '', researchQuestion: lit.researchQuestion || '',
+      keywords: lit.keywords.join(', '), literatureType: lit.literatureType || '期刊论文',
+    });
+    setShowEdit(true);
+  };
+
+  const handleEdit = () => {
+    if (!editLit || !editForm.title.trim()) return;
+    updateLiterature(editLit.id, {
+      title: editForm.title.trim(),
+      authors: editForm.authors.split(/[,;，；]/).map((s: string) => s.trim()).filter(Boolean),
+      year: parseInt(editForm.year) || new Date().getFullYear(),
+      journal: editForm.journal.trim() || undefined,
+      doi: editForm.doi.trim() || undefined,
+      researchQuestion: editForm.researchQuestion.trim() || undefined,
+      keywords: editForm.keywords.split(/[,;，；]/).map((s: string) => s.trim()).filter(Boolean),
+      literatureType: editForm.literatureType,
+    } as any);
+    setShowEdit(false); setEditLit(null);
+    toast('success', '文献已更新');
+  };
+
   return (
     <div>
-      <div className="page-header">
-        <h1 className="page-title">文献库</h1>
-        <p className="text-body-sm text-text-muted mt-1">{literatures.length} 篇文献</p>
+      <div className="page-header flex items-center justify-between">
+        <div>
+          <h1 className="page-title">文献库</h1>
+          <p className="text-body-sm text-text-muted mt-1">{literatures.length} 篇文献</p>
+        </div>
+        <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-1.5">
+          <Plus size={16} /> <span className="hidden sm:inline">新建文献</span>
+        </button>
       </div>
 
       {/* Search & Filter */}
@@ -203,9 +237,25 @@ export default function LiteratureLibrary() {
                 创建于 {formatRelative(selected.createdAt)} · 更新于 {formatRelative(selected.updatedAt)}
               </div>
 
+              <div className="pt-2 border-t border-gray-50">
+                <p className="text-xs text-text-muted mb-2">阅读状态</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {(['to-read', 'skimming', 'reading', 'completed'] as ReadingStatus[]).map(s => (
+                    <button key={s}
+                      onClick={() => updateLiteratureStatus(selected.id, s)}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                        selected.readingStatus === s ? 'bg-warm-brown text-white' : 'bg-gray-100 text-text-muted hover:bg-gray-200'
+                      }`}>{statusLabels[s]}</button>
+                  ))}
+                </div>
+              </div>
+
               <div className="flex gap-2 pt-2 border-t border-gray-50">
                 <button onClick={() => toggleStarLiterature(selected.id)} className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-colors ${selected.starred ? 'bg-warm-light border-warm-brown/30 text-warm-brown' : 'border-gray-100 text-text-secondary hover:bg-cream'}`}>
                   {selected.starred ? '已收藏' : '收藏'}
+                </button>
+                <button onClick={() => { openEdit(selected); setSelectedId(null); }} className="flex-1 py-2 rounded-xl text-sm font-medium border border-gray-100 text-mist-blue hover:bg-mist-light/30 transition-colors">
+                  <span className="flex items-center justify-center gap-1"><Edit3 size={13} />编辑</span>
                 </button>
                 <button onClick={() => { setDeleteTarget(selected.id); }} className="flex-1 py-2 rounded-xl text-sm font-medium border border-gray-100 text-rose-500 hover:bg-rose-50 transition-colors">
                   删除
@@ -274,19 +324,84 @@ export default function LiteratureLibrary() {
             <div className="flex gap-3 mt-6">
               <button onClick={() => setShowCreate(false)} className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-text-secondary hover:bg-gray-50 transition-colors">取消</button>
               <button onClick={() => {
-                if (!newLit.title.trim()) { toast.error('请输入文献标题'); return; }
+                if (!newLit.title.trim()) { toast('error', '请输入文献标题'); return; }
                 addLiterature({
                   title: newLit.title, authors: newLit.authors.split(',').map(s => s.trim()).filter(Boolean),
                   year: parseInt(newLit.year) || new Date().getFullYear(), journal: newLit.journal,
-                  doi: newLit.doi, abstract: newLit.abstract,
+                  doi: newLit.doi, researchQuestion: newLit.abstract,
                   keywords: newLit.keywords.split(',').map(s => s.trim()).filter(Boolean),
-                  readingStatus: 'to-read', starred: false,
-                  link: newLit.link || undefined, type: newLit.type as any
-                });
-                toast.success('文献已添加');
+                  readingStatus: 'to-read' as ReadingStatus, starred: false,
+                  literatureType: newLit.type, tags: [], linkedPaperIds: [],
+                  linkedTheoryIds: [], linkedMethodIds: [], archived: false,
+                } as any);
+                toast('success', '文献已添加');
                 setNewLit({ title: '', authors: '', year: new Date().getFullYear().toString(), journal: '', doi: '', abstract: '', keywords: '', link: '', type: '期刊论文' });
                 setShowCreate(false);
               }} className="flex-1 px-4 py-2.5 rounded-xl bg-warm-brown text-white text-sm font-medium hover:bg-warm-brown/90 transition-colors">创建</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEdit && editLit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => { setShowEdit(false); setEditLit(null); }} />
+          <div className="relative bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-semibold text-text-primary">编辑文献</h2>
+              <button onClick={() => { setShowEdit(false); setEditLit(null); }} className="p-1.5 rounded-lg hover:bg-gray-100 text-text-muted"><X size={18} /></button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs text-text-muted block mb-1.5">标题 *</label>
+                <input value={editForm.title} onChange={e => setEditForm(p => ({ ...p, title: e.target.value }))}
+                  className="w-full h-10 px-3 rounded-xl bg-cream border border-gray-100 text-text-primary focus:border-warm-brown/30 focus:outline-none text-sm" />
+              </div>
+              <div>
+                <label className="text-xs text-text-muted block mb-1.5">作者（逗号分隔）</label>
+                <input value={editForm.authors} onChange={e => setEditForm(p => ({ ...p, authors: e.target.value }))}
+                  className="w-full h-10 px-3 rounded-xl bg-cream border border-gray-100 text-text-primary focus:border-warm-brown/30 focus:outline-none text-sm" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-text-muted block mb-1.5">年份</label>
+                  <input value={editForm.year} onChange={e => setEditForm(p => ({ ...p, year: e.target.value }))}
+                    className="w-full h-10 px-3 rounded-xl bg-cream border border-gray-100 text-text-primary focus:border-warm-brown/30 focus:outline-none text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs text-text-muted block mb-1.5">文献类型</label>
+                  <select value={editForm.literatureType} onChange={e => setEditForm(p => ({ ...p, literatureType: e.target.value }))}
+                    className="w-full h-10 px-3 rounded-xl bg-cream border border-gray-100 text-text-primary focus:border-warm-brown/30 focus:outline-none text-sm">
+                    <option>期刊论文</option><option>会议论文</option><option>书籍</option><option>学位论文</option><option>报告</option><option>其他</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-text-muted block mb-1.5">期刊/出版</label>
+                <input value={editForm.journal} onChange={e => setEditForm(p => ({ ...p, journal: e.target.value }))}
+                  className="w-full h-10 px-3 rounded-xl bg-cream border border-gray-100 text-text-primary focus:border-warm-brown/30 focus:outline-none text-sm" />
+              </div>
+              <div>
+                <label className="text-xs text-text-muted block mb-1.5">DOI</label>
+                <input value={editForm.doi} onChange={e => setEditForm(p => ({ ...p, doi: e.target.value }))}
+                  className="w-full h-10 px-3 rounded-xl bg-cream border border-gray-100 text-text-primary focus:border-warm-brown/30 focus:outline-none text-sm" />
+              </div>
+              <div>
+                <label className="text-xs text-text-muted block mb-1.5">关键词（逗号分隔）</label>
+                <input value={editForm.keywords} onChange={e => setEditForm(p => ({ ...p, keywords: e.target.value }))}
+                  className="w-full h-10 px-3 rounded-xl bg-cream border border-gray-100 text-text-primary focus:border-warm-brown/30 focus:outline-none text-sm" />
+              </div>
+              <div>
+                <label className="text-xs text-text-muted block mb-1.5">研究问题</label>
+                <textarea value={editForm.researchQuestion} onChange={e => setEditForm(p => ({ ...p, researchQuestion: e.target.value }))}
+                  rows={3} className="w-full px-3 py-2 rounded-xl bg-cream border border-gray-100 text-text-primary focus:border-warm-brown/30 focus:outline-none text-sm resize-none" />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => { setShowEdit(false); setEditLit(null); }} className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-text-secondary hover:bg-gray-50 transition-colors">取消</button>
+              <button onClick={handleEdit} className="flex-1 px-4 py-2.5 rounded-xl bg-mist-blue text-white text-sm font-medium hover:bg-mist-blue/90 transition-colors disabled:opacity-40"
+                disabled={!editForm.title.trim()}>保存</button>
             </div>
           </div>
         </div>
@@ -296,7 +411,7 @@ export default function LiteratureLibrary() {
       <ConfirmDialog
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        onConfirm={() => { if (deleteTarget) { deleteLiterature(deleteTarget); toast.success('文献已删除'); setSelectedId(null); setDeleteTarget(null); } }}
+        onConfirm={() => { if (deleteTarget) { deleteLiterature(deleteTarget); toast('success', '文献已删除'); setSelectedId(null); setDeleteTarget(null); } }}
         title="删除文献"
         message="删除后将无法恢复，该文献的阅读笔记等信息可能丢失。"
         itemName={literatures.find(l => l.id === deleteTarget)?.title}
