@@ -616,5 +616,8 @@ export interface AppSettings {
   theme: 'light';
   language: 'zh-CN';
   userName: string;
+  email: string;
+  organization: string;
+  field: string;
   weeklyGoal: string;
 }

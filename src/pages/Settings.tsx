@@ -1,9 +1,11 @@
 import { useState, useRef } from 'react';
+import { useToast } from '../components/common';
 import { Settings, User, Palette, Database, Trash2, Monitor, Smartphone, Download, Upload } from 'lucide-react';
 import { useStore } from '../store';
 
 export default function SettingsPage() {
   const { settings, updateSettings, resetAllData, exportData, importData } = useStore();
+  const { toast } = useToast();
   const [tab, setTab] = useState<'profile' | 'display' | 'data'>('profile');
   const [resetConfirm, setResetConfirm] = useState(false);
   const [importMsg, setImportMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -87,19 +89,34 @@ export default function SettingsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
                 <label className="text-xs text-text-muted block mb-1.5">姓名</label>
-                <input defaultValue="研究员" className="w-full h-10 px-3 rounded-xl bg-cream border border-gray-100 text-text-primary focus:border-warm-brown/30 focus:outline-none text-sm" />
+                <input
+                  value={settings.userName}
+                  onChange={(e) => updateSettings({ userName: e.target.value })}
+                  className="w-full h-10 px-3 rounded-xl bg-cream border border-gray-100 text-text-primary focus:border-warm-brown/30 focus:outline-none text-sm" />
               </div>
               <div>
                 <label className="text-xs text-text-muted block mb-1.5">邮箱</label>
-                <input defaultValue="researcher@example.com" className="w-full h-10 px-3 rounded-xl bg-cream border border-gray-100 text-text-primary focus:border-warm-brown/30 focus:outline-none text-sm" />
+                <input
+                  value={settings.email || ''}
+                  onChange={(e) => updateSettings({ email: e.target.value })}
+                  placeholder="请输入邮箱地址"
+                  className="w-full h-10 px-3 rounded-xl bg-cream border border-gray-100 text-text-primary focus:border-warm-brown/30 focus:outline-none text-sm" />
               </div>
               <div>
                 <label className="text-xs text-text-muted block mb-1.5">学校/机构</label>
-                <input defaultValue="" placeholder="请输入机构名称" className="w-full h-10 px-3 rounded-xl bg-cream border border-gray-100 text-text-primary focus:border-warm-brown/30 focus:outline-none text-sm" />
+                <input
+                  value={settings.organization || ''}
+                  onChange={(e) => updateSettings({ organization: e.target.value })}
+                  placeholder="请输入机构名称"
+                  className="w-full h-10 px-3 rounded-xl bg-cream border border-gray-100 text-text-primary focus:border-warm-brown/30 focus:outline-none text-sm" />
               </div>
               <div>
                 <label className="text-xs text-text-muted block mb-1.5">研究领域</label>
-                <input defaultValue="出版学" className="w-full h-10 px-3 rounded-xl bg-cream border border-gray-100 text-text-primary focus:border-warm-brown/30 focus:outline-none text-sm" />
+                <input
+                  value={settings.field || ''}
+                  onChange={(e) => updateSettings({ field: e.target.value })}
+                  placeholder="请输入研究领域"
+                  className="w-full h-10 px-3 rounded-xl bg-cream border border-gray-100 text-text-primary focus:border-warm-brown/30 focus:outline-none text-sm" />
               </div>
             </div>
           </div>

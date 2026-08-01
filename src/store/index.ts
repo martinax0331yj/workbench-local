@@ -81,18 +81,28 @@ export interface AppStore {
   postponeTask: (id: string, reason: string) => void;
 
   literatures: Literature[];
+  addLiterature: (l: Omit<Literature, 'id' | 'createdAt' | 'updatedAt'>) => string;
+  updateLiterature: (id: string, partial: Partial<Literature>) => void;
   toggleStarLiterature: (id: string) => void;
   deleteLiterature: (id: string) => void;
   updateLiteratureStatus: (id: string, status: Literature['readingStatus']) => void;
 
   theories: Theory[];
+  addTheory: (t: Omit<Theory, 'id' | 'createdAt' | 'updatedAt'>) => string;
+  updateTheory: (id: string, partial: Partial<Theory>) => void;
   deleteTheory: (id: string) => void;
 
   methods: Method[];
+  addMethod: (m: Omit<Method, 'id' | 'createdAt' | 'updatedAt'>) => string;
+  updateMethod: (id: string, partial: Partial<Method>) => void;
   deleteMethod: (id: string) => void;
 
   shortPapers: ShortPaper[];
+  addShortPaper: (p: Omit<ShortPaper, 'id' | 'createdAt' | 'updatedAt'>) => string;
   updateShortPaper: (id: string, partial: Partial<ShortPaper>) => void;
+  deleteShortPaper: (id: string) => void;
+  archiveShortPaper: (id: string) => void;
+  restoreShortPaper: (id: string) => void;
 
   thesis: Thesis | null;
   updateThesis: (partial: Partial<Thesis>) => void;
@@ -103,24 +113,57 @@ export interface AppStore {
   deleteResearchIdea: (id: string) => void;
 
   policies: Policy[];
+  addPolicy: (p: Omit<Policy, 'id' | 'createdAt' | 'updatedAt'>) => string;
+  updatePolicy: (id: string, partial: Partial<Policy>) => void;
+  deletePolicy: (id: string) => void;
   cases: CaseStudy[];
+  addCase: (c: Omit<CaseStudy, 'id' | 'createdAt' | 'updatedAt'>) => string;
+  updateCase: (id: string, partial: Partial<CaseStudy>) => void;
+  deleteCase: (id: string) => void;
   reports: Report[];
+  addReport: (r: Omit<Report, 'id' | 'createdAt' | 'updatedAt'>) => string;
+  updateReport: (id: string, partial: Partial<Report>) => void;
+  deleteReport: (id: string) => void;
   readingNotes: ReadingNote[];
   addReadingNote: (n: Omit<ReadingNote, 'id' | 'createdAt' | 'updatedAt'>) => string;
   updateReadingNote: (id: string, partial: Partial<ReadingNote>) => void;
   deleteReadingNote: (id: string) => void;
 
   financePlans: FinancePlan[];
+  addFinancePlan: (f: Omit<FinancePlan, 'id'>) => string;
+  updateFinancePlan: (id: string, partial: Partial<FinancePlan>) => void;
+  deleteFinancePlan: (id: string) => void;
   financeRecords: FinanceRecord[];
+  addFinanceRecord: (r: Omit<FinanceRecord, 'id'>) => string;
+  updateFinanceRecord: (id: string, partial: Partial<FinanceRecord>) => void;
+  deleteFinanceRecord: (id: string) => void;
 
   languageLearnings: LanguageLearning[];
+  addLanguageLearning: (l: Omit<LanguageLearning, 'id' | 'createdAt' | 'updatedAt'>) => string;
+  updateLanguageLearning: (id: string, partial: Partial<LanguageLearning>) => void;
+  deleteLanguageLearning: (id: string) => void;
   learningTasks: LearningTask[];
+  addLearningTask: (t: Omit<LearningTask, 'id'>) => string;
+  updateLearningTask: (id: string, partial: Partial<LearningTask>) => void;
+  deleteLearningTask: (id: string) => void;
   toggleLearningTask: (id: string) => void;
 
   ecommerceProducts: EcommerceProduct[];
+  addEcommerceProduct: (p: Omit<EcommerceProduct, 'id' | 'createdAt' | 'updatedAt'>) => string;
+  updateEcommerceProduct: (id: string, partial: Partial<EcommerceProduct>) => void;
+  deleteEcommerceProduct: (id: string) => void;
   wechatArticles: WechatArticle[];
+  addWechatArticle: (a: Omit<WechatArticle, 'id' | 'createdAt' | 'updatedAt'>) => string;
+  updateWechatArticle: (id: string, partial: Partial<WechatArticle>) => void;
+  deleteWechatArticle: (id: string) => void;
   videoProjects: VideoProject[];
+  addVideoProject: (v: Omit<VideoProject, 'id' | 'createdAt' | 'updatedAt'>) => string;
+  updateVideoProject: (id: string, partial: Partial<VideoProject>) => void;
+  deleteVideoProject: (id: string) => void;
   healthRecords: HealthRecord[];
+  addHealthRecord: (r: Omit<HealthRecord, 'id'>) => string;
+  updateHealthRecord: (id: string, partial: Partial<HealthRecord>) => void;
+  deleteHealthRecord: (id: string) => void;
 
   // Data export / import
   exportData: () => object;
@@ -309,6 +352,14 @@ export const useStore = create<AppStore>()(
 
       // ==================== Legacy ====================
       literatures: defaultState.literatures,
+      addLiterature: (l) => {
+        const id = uid();
+        set((s) => ({ literatures: [...s.literatures, { ...l, id, createdAt: now(), updatedAt: now() }] }));
+        return id;
+      },
+      updateLiterature: (id, partial) => set((s) => ({
+        literatures: s.literatures.map(l => l.id === id ? { ...l, ...partial, updatedAt: now() } : l)
+      })),
       toggleStarLiterature: (id) => set((s) => ({
         literatures: s.literatures.map(l => l.id === id ? { ...l, starred: !l.starred } : l)
       })),
@@ -318,13 +369,41 @@ export const useStore = create<AppStore>()(
       })),
 
       theories: defaultState.theories,
+      addTheory: (t) => {
+        const id = uid();
+        set((s) => ({ theories: [...s.theories, { ...t, id, createdAt: now(), updatedAt: now() }] }));
+        return id;
+      },
+      updateTheory: (id, partial) => set((s) => ({
+        theories: s.theories.map(t => t.id === id ? { ...t, ...partial, updatedAt: now() } : t)
+      })),
       deleteTheory: (id) => set((s) => ({ theories: s.theories.filter(t => t.id !== id) })),
       methods: defaultState.methods,
+      addMethod: (m) => {
+        const id = uid();
+        set((s) => ({ methods: [...s.methods, { ...m, id, createdAt: now(), updatedAt: now() }] }));
+        return id;
+      },
+      updateMethod: (id, partial) => set((s) => ({
+        methods: s.methods.map(m => m.id === id ? { ...m, ...partial, updatedAt: now() } : m)
+      })),
       deleteMethod: (id) => set((s) => ({ methods: s.methods.filter(m => m.id !== id) })),
 
       shortPapers: defaultState.shortPapers,
+      addShortPaper: (p) => {
+        const id = uid();
+        set((s) => ({ shortPapers: [...s.shortPapers, { ...p, id, createdAt: now(), updatedAt: now() }] }));
+        return id;
+      },
       updateShortPaper: (id, partial) => set((s) => ({
-        shortPapers: s.shortPapers.map(p => p.id === id ? { ...p, ...partial } : p)
+        shortPapers: s.shortPapers.map(p => p.id === id ? { ...p, ...partial, updatedAt: now() } : p)
+      })),
+      deleteShortPaper: (id) => set((s) => ({ shortPapers: s.shortPapers.filter(p => p.id !== id) })),
+      archiveShortPaper: (id) => set((s) => ({
+        shortPapers: s.shortPapers.map(p => p.id === id ? { ...p, archived: true } : p)
+      })),
+      restoreShortPaper: (id) => set((s) => ({
+        shortPapers: s.shortPapers.map(p => p.id === id ? { ...p, archived: false } : p)
       })),
       thesis: defaultState.thesis,
       updateThesis: (partial) => set((s) => ({ thesis: s.thesis ? { ...s.thesis, ...partial } : null })),
@@ -340,8 +419,35 @@ export const useStore = create<AppStore>()(
       deleteResearchIdea: (id) => set((s) => ({ researchIdeas: s.researchIdeas.filter(i => i.id !== id) })),
 
       policies: defaultState.policies,
+      addPolicy: (p) => {
+        const id = uid();
+        set((s) => ({ policies: [...s.policies, { ...p, id, createdAt: now(), updatedAt: now() }] }));
+        return id;
+      },
+      updatePolicy: (id, partial) => set((s) => ({
+        policies: s.policies.map(p => p.id === id ? { ...p, ...partial, updatedAt: now() } : p)
+      })),
+      deletePolicy: (id) => set((s) => ({ policies: s.policies.filter(p => p.id !== id) })),
       cases: defaultState.cases,
+      addCase: (c) => {
+        const id = uid();
+        set((s) => ({ cases: [...s.cases, { ...c, id, createdAt: now(), updatedAt: now() }] }));
+        return id;
+      },
+      updateCase: (id, partial) => set((s) => ({
+        cases: s.cases.map(c => c.id === id ? { ...c, ...partial, updatedAt: now() } : c)
+      })),
+      deleteCase: (id) => set((s) => ({ cases: s.cases.filter(c => c.id !== id) })),
       reports: defaultState.reports,
+      addReport: (r) => {
+        const id = uid();
+        set((s) => ({ reports: [...s.reports, { ...r, id, createdAt: now(), updatedAt: now() }] }));
+        return id;
+      },
+      updateReport: (id, partial) => set((s) => ({
+        reports: s.reports.map(r => r.id === id ? { ...r, ...partial, updatedAt: now() } : r)
+      })),
+      deleteReport: (id) => set((s) => ({ reports: s.reports.filter(r => r.id !== id) })),
       readingNotes: defaultState.readingNotes,
       addReadingNote: (n) => {
         const id = uid();
@@ -354,16 +460,88 @@ export const useStore = create<AppStore>()(
       deleteReadingNote: (id) => set((s) => ({ readingNotes: s.readingNotes.filter(n => n.id !== id) })),
 
       financePlans: defaultState.financePlans,
+      addFinancePlan: (f) => {
+        const id = uid();
+        set((s) => ({ financePlans: [...s.financePlans, { ...f, id }] }));
+        return id;
+      },
+      updateFinancePlan: (id, partial) => set((s) => ({
+        financePlans: s.financePlans.map(p => p.id === id ? { ...p, ...partial } : p)
+      })),
+      deleteFinancePlan: (id) => set((s) => ({ financePlans: s.financePlans.filter(p => p.id !== id) })),
       financeRecords: defaultState.financeRecords,
+      addFinanceRecord: (r) => {
+        const id = uid();
+        set((s) => ({ financeRecords: [...s.financeRecords, { ...r, id }] }));
+        return id;
+      },
+      updateFinanceRecord: (id, partial) => set((s) => ({
+        financeRecords: s.financeRecords.map(r => r.id === id ? { ...r, ...partial } : r)
+      })),
+      deleteFinanceRecord: (id) => set((s) => ({ financeRecords: s.financeRecords.filter(r => r.id !== id) })),
       languageLearnings: defaultState.languageLearnings,
+      addLanguageLearning: (l) => {
+        const id = uid();
+        set((s) => ({ languageLearnings: [...s.languageLearnings, { ...l, id, createdAt: now(), updatedAt: now() }] }));
+        return id;
+      },
+      updateLanguageLearning: (id, partial) => set((s) => ({
+        languageLearnings: s.languageLearnings.map(l => l.id === id ? { ...l, ...partial, updatedAt: now() } : l)
+      })),
+      deleteLanguageLearning: (id) => set((s) => ({ languageLearnings: s.languageLearnings.filter(l => l.id !== id) })),
       learningTasks: defaultState.learningTasks,
+      addLearningTask: (t) => {
+        const id = uid();
+        set((s) => ({ learningTasks: [...s.learningTasks, { ...t, id }] }));
+        return id;
+      },
+      updateLearningTask: (id, partial) => set((s) => ({
+        learningTasks: s.learningTasks.map(t => t.id === id ? { ...t, ...partial } : t)
+      })),
+      deleteLearningTask: (id) => set((s) => ({ learningTasks: s.learningTasks.filter(t => t.id !== id) })),
       toggleLearningTask: (id) => set((s) => ({
         learningTasks: s.learningTasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t)
       })),
       ecommerceProducts: defaultState.ecommerceProducts,
+      addEcommerceProduct: (ep) => {
+        const id = uid();
+        set((s) => ({ ecommerceProducts: [...s.ecommerceProducts, { ...ep, id, createdAt: now(), updatedAt: now() }] }));
+        return id;
+      },
+      updateEcommerceProduct: (id, partial) => set((s) => ({
+        ecommerceProducts: s.ecommerceProducts.map(p => p.id === id ? { ...p, ...partial, updatedAt: now() } : p)
+      })),
+      deleteEcommerceProduct: (id) => set((s) => ({ ecommerceProducts: s.ecommerceProducts.filter(p => p.id !== id) })),
       wechatArticles: defaultState.wechatArticles,
+      addWechatArticle: (a) => {
+        const id = uid();
+        set((s) => ({ wechatArticles: [...s.wechatArticles, { ...a, id, createdAt: now(), updatedAt: now() }] }));
+        return id;
+      },
+      updateWechatArticle: (id, partial) => set((s) => ({
+        wechatArticles: s.wechatArticles.map(a => a.id === id ? { ...a, ...partial, updatedAt: now() } : a)
+      })),
+      deleteWechatArticle: (id) => set((s) => ({ wechatArticles: s.wechatArticles.filter(a => a.id !== id) })),
       videoProjects: defaultState.videoProjects,
+      addVideoProject: (v) => {
+        const id = uid();
+        set((s) => ({ videoProjects: [...s.videoProjects, { ...v, id, createdAt: now(), updatedAt: now() }] }));
+        return id;
+      },
+      updateVideoProject: (id, partial) => set((s) => ({
+        videoProjects: s.videoProjects.map(v => v.id === id ? { ...v, ...partial, updatedAt: now() } : v)
+      })),
+      deleteVideoProject: (id) => set((s) => ({ videoProjects: s.videoProjects.filter(v => v.id !== id) })),
       healthRecords: defaultState.healthRecords,
+      addHealthRecord: (r) => {
+        const id = uid();
+        set((s) => ({ healthRecords: [...s.healthRecords, { ...r, id }] }));
+        return id;
+      },
+      updateHealthRecord: (id, partial) => set((s) => ({
+        healthRecords: s.healthRecords.map(r => r.id === id ? { ...r, ...partial } : r)
+      })),
+      deleteHealthRecord: (id) => set((s) => ({ healthRecords: s.healthRecords.filter(r => r.id !== id) })),
 
       // ==================== Data Export / Import ====================
       exportData: () => {
@@ -426,6 +604,6 @@ export const useStore = create<AppStore>()(
         set(clean as Partial<AppStore>);
       },
     }),
-    { name: 'research-workbench-v2' }
+    { name: 'research-workbench-v2', version: 2 }
   )
 );

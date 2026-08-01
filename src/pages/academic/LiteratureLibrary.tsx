@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Search, Filter, Grid3X3, List, Archive, Star, Trash2, X, ChevronDown, BookOpen, ExternalLink } from 'lucide-react';
 import { useStore } from '../../store';
 import { formatRelative, formatDateShort } from '../../utils';
+import { ConfirmDialog, useToast } from '../../components/common';
 import type { ReadingStatus, Literature } from '../../types';
 
 const statusLabels: Record<ReadingStatus, string> = {
@@ -13,12 +14,16 @@ const statusColors: Record<ReadingStatus, string> = {
 };
 
 export default function LiteratureLibrary() {
-  const { literatures, toggleStarLiterature, deleteLiterature, updateLiteratureStatus } = useStore();
+  const { literatures, addLiterature, toggleStarLiterature, deleteLiterature, updateLiteratureStatus } = useStore();
+  const { toast } = useToast();
   const [view, setView] = useState<'card' | 'table'>('card');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<ReadingStatus | 'all'>('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [newLit, setNewLit] = useState({ title: '', authors: '', year: new Date().getFullYear().toString(), journal: '', doi: '', abstract: '', keywords: '', link: '', type: '期刊论文' });
 
   let filtered = literatures;
   if (statusFilter !== 'all') filtered = filtered.filter(l => l.readingStatus === statusFilter);
@@ -102,7 +107,7 @@ export default function LiteratureLibrary() {
         <div className="card text-center py-10">
           <BookOpen size={32} className="mx-auto text-text-muted mb-3" />
           <p className="text-text-secondary">暂无符合条件的文献</p>
-          <button className="mt-3 text-sm text-warm-brown font-medium">新建文献</button>
+          <button onClick={() => setShowCreate(true)} className="mt-3 text-sm text-warm-brown font-medium hover:underline">新建文献</button>
         </div>
       ) : view === 'card' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
@@ -202,7 +207,7 @@ export default function LiteratureLibrary() {
                 <button onClick={() => toggleStarLiterature(selected.id)} className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-colors ${selected.starred ? 'bg-warm-light border-warm-brown/30 text-warm-brown' : 'border-gray-100 text-text-secondary hover:bg-cream'}`}>
                   {selected.starred ? '已收藏' : '收藏'}
                 </button>
-                <button onClick={() => { deleteLiterature(selected.id); setSelectedId(null); }} className="flex-1 py-2 rounded-xl text-sm font-medium border border-gray-100 text-rose-500 hover:bg-rose-50 transition-colors">
+                <button onClick={() => { setDeleteTarget(selected.id); }} className="flex-1 py-2 rounded-xl text-sm font-medium border border-gray-100 text-rose-500 hover:bg-rose-50 transition-colors">
                   删除
                 </button>
               </div>
@@ -210,6 +215,92 @@ export default function LiteratureLibrary() {
           </div>
         </div>
       )}
+
+      {/* Create Modal */}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowCreate(false)} />
+          <div className="relative bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-semibold text-text-primary">新建文献</h2>
+              <button onClick={() => setShowCreate(false)} className="p-1.5 rounded-lg hover:bg-gray-100 text-text-muted"><X size={18} /></button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs text-text-muted block mb-1.5">标题 *</label>
+                <input value={newLit.title} onChange={e => setNewLit(p => ({ ...p, title: e.target.value }))}
+                  placeholder="输入文献标题" className="w-full h-10 px-3 rounded-xl bg-cream border border-gray-100 text-text-primary focus:border-warm-brown/30 focus:outline-none text-sm" />
+              </div>
+              <div>
+                <label className="text-xs text-text-muted block mb-1.5">作者（逗号分隔）</label>
+                <input value={newLit.authors} onChange={e => setNewLit(p => ({ ...p, authors: e.target.value }))}
+                  placeholder="如：张三, 李四" className="w-full h-10 px-3 rounded-xl bg-cream border border-gray-100 text-text-primary focus:border-warm-brown/30 focus:outline-none text-sm" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-text-muted block mb-1.5">年份</label>
+                  <input value={newLit.year} onChange={e => setNewLit(p => ({ ...p, year: e.target.value }))}
+                    placeholder="2024" className="w-full h-10 px-3 rounded-xl bg-cream border border-gray-100 text-text-primary focus:border-warm-brown/30 focus:outline-none text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs text-text-muted block mb-1.5">文献类型</label>
+                  <select value={newLit.type} onChange={e => setNewLit(p => ({ ...p, type: e.target.value }))}
+                    className="w-full h-10 px-3 rounded-xl bg-cream border border-gray-100 text-text-primary focus:border-warm-brown/30 focus:outline-none text-sm">
+                    <option>期刊论文</option><option>会议论文</option><option>书籍</option><option>学位论文</option><option>报告</option><option>其他</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-text-muted block mb-1.5">期刊/出版</label>
+                <input value={newLit.journal} onChange={e => setNewLit(p => ({ ...p, journal: e.target.value }))}
+                  placeholder="期刊或出版机构名称" className="w-full h-10 px-3 rounded-xl bg-cream border border-gray-100 text-text-primary focus:border-warm-brown/30 focus:outline-none text-sm" />
+              </div>
+              <div>
+                <label className="text-xs text-text-muted block mb-1.5">DOI</label>
+                <input value={newLit.doi} onChange={e => setNewLit(p => ({ ...p, doi: e.target.value }))}
+                  placeholder="10.xxxx/xxxxx" className="w-full h-10 px-3 rounded-xl bg-cream border border-gray-100 text-text-primary focus:border-warm-brown/30 focus:outline-none text-sm" />
+              </div>
+              <div>
+                <label className="text-xs text-text-muted block mb-1.5">关键词（逗号分隔）</label>
+                <input value={newLit.keywords} onChange={e => setNewLit(p => ({ ...p, keywords: e.target.value }))}
+                  placeholder="如：数字出版, 人工智能" className="w-full h-10 px-3 rounded-xl bg-cream border border-gray-100 text-text-primary focus:border-warm-brown/30 focus:outline-none text-sm" />
+              </div>
+              <div>
+                <label className="text-xs text-text-muted block mb-1.5">摘要</label>
+                <textarea value={newLit.abstract} onChange={e => setNewLit(p => ({ ...p, abstract: e.target.value }))}
+                  placeholder="文献摘要" rows={3} className="w-full px-3 py-2 rounded-xl bg-cream border border-gray-100 text-text-primary focus:border-warm-brown/30 focus:outline-none text-sm resize-none" />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setShowCreate(false)} className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-text-secondary hover:bg-gray-50 transition-colors">取消</button>
+              <button onClick={() => {
+                if (!newLit.title.trim()) { toast.error('请输入文献标题'); return; }
+                addLiterature({
+                  title: newLit.title, authors: newLit.authors.split(',').map(s => s.trim()).filter(Boolean),
+                  year: parseInt(newLit.year) || new Date().getFullYear(), journal: newLit.journal,
+                  doi: newLit.doi, abstract: newLit.abstract,
+                  keywords: newLit.keywords.split(',').map(s => s.trim()).filter(Boolean),
+                  readingStatus: 'to-read', starred: false,
+                  link: newLit.link || undefined, type: newLit.type as any
+                });
+                toast.success('文献已添加');
+                setNewLit({ title: '', authors: '', year: new Date().getFullYear().toString(), journal: '', doi: '', abstract: '', keywords: '', link: '', type: '期刊论文' });
+                setShowCreate(false);
+              }} className="flex-1 px-4 py-2.5 rounded-xl bg-warm-brown text-white text-sm font-medium hover:bg-warm-brown/90 transition-colors">创建</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirm */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => { if (deleteTarget) { deleteLiterature(deleteTarget); toast.success('文献已删除'); setSelectedId(null); setDeleteTarget(null); } }}
+        title="删除文献"
+        message="删除后将无法恢复，该文献的阅读笔记等信息可能丢失。"
+        itemName={literatures.find(l => l.id === deleteTarget)?.title}
+      />
     </div>
   );
 }

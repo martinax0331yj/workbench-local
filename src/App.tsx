@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { ToastProvider } from './components/common';
 import Layout from './components/layout/Layout';
 import Home from './pages/Home';
 import Today from './pages/Today';
@@ -26,32 +27,34 @@ import Settings from './pages/Settings';
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<Home />} />
-          <Route path="/today" element={<Today />} />
-          <Route path="/review" element={<Review />} />
-          <Route path="/academic/literature" element={<LiteratureLibrary />} />
-          <Route path="/academic/theory" element={<TheoryLibrary />} />
-          <Route path="/academic/method" element={<MethodLibrary />} />
-          <Route path="/papers/short" element={<ShortPapers />} />
-          <Route path="/papers/thesis" element={<ThesisPage />} />
-          <Route path="/papers/ideas" element={<ResearchIdeas />} />
-          <Route path="/industry/policies" element={<PolicyLibrary />} />
-          <Route path="/industry/cases" element={<CaseLibrary />} />
-          <Route path="/industry/reports" element={<ReportWriting />} />
-          <Route path="/industry/notes" element={<ReadingNotes />} />
-          <Route path="/learning/finance" element={<FinancePage />} />
-          <Route path="/learning/languages" element={<LanguagesPage />} />
-          <Route path="/learning/ecommerce" element={<EcommercePage />} />
-          <Route path="/learning/wechat" element={<WechatPage />} />
-          <Route path="/learning/video" element={<VideoPage />} />
-          <Route path="/learning/health" element={<HealthPage />} />
-          <Route path="/calendar" element={<CalendarTasks />} />
-          <Route path="/library" element={<GlobalLibrary />} />
-          <Route path="/settings" element={<Settings />} />
-        </Route>
-      </Routes>
+      <ToastProvider>
+        <Routes>
+          <Route element={<Layout />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/today" element={<Today />} />
+            <Route path="/review" element={<Review />} />
+            <Route path="/academic/literature" element={<LiteratureLibrary />} />
+            <Route path="/academic/theory" element={<TheoryLibrary />} />
+            <Route path="/academic/method" element={<MethodLibrary />} />
+            <Route path="/papers/short" element={<ShortPapers />} />
+            <Route path="/papers/thesis" element={<ThesisPage />} />
+            <Route path="/papers/ideas" element={<ResearchIdeas />} />
+            <Route path="/industry/policies" element={<PolicyLibrary />} />
+            <Route path="/industry/cases" element={<CaseLibrary />} />
+            <Route path="/industry/reports" element={<ReportWriting />} />
+            <Route path="/industry/notes" element={<ReadingNotes />} />
+            <Route path="/learning/finance" element={<FinancePage />} />
+            <Route path="/learning/languages" element={<LanguagesPage />} />
+            <Route path="/learning/ecommerce" element={<EcommercePage />} />
+            <Route path="/learning/wechat" element={<WechatPage />} />
+            <Route path="/learning/video" element={<VideoPage />} />
+            <Route path="/learning/health" element={<HealthPage />} />
+            <Route path="/calendar" element={<CalendarTasks />} />
+            <Route path="/library" element={<GlobalLibrary />} />
+            <Route path="/settings" element={<Settings />} />
+          </Route>
+        </Routes>
+      </ToastProvider>
     </BrowserRouter>
   );
 }

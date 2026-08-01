@@ -877,7 +877,7 @@ function ReminderSection() {
       <div className="flex items-center gap-2 mb-3">
         <AlertTriangle size={16} className="text-amber-500" />
         <h2 className="font-medium text-text-primary">督促提醒</h2>
-        <button onClick={() => {}} className="text-xs text-warm-brown hover:underline ml-auto">配置</button>
+        <button onClick={() => navigate('/settings')} className="text-xs text-warm-brown hover:underline ml-auto">配置</button>
       </div>
       <div className="space-y-2">
         {reminders.map((r, i) => {
