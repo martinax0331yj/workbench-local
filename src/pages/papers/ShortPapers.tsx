@@ -115,8 +115,30 @@ export default function ShortPapers() {
                 <h2 className="text-lg font-serif font-semibold text-text-primary">{paper.title}</h2>
               </div>
               <button onClick={() => setSelectedId(null)} className="p-1.5 rounded-lg hover:bg-gray-100 text-text-muted flex-shrink-0">
-                <FileText size={18} />
+                <X size={18} />
               </button>
+            </div>
+
+            {/* Quick Edit */}
+            <div className="mb-4 p-3 rounded-xl bg-cream border border-gray-100 space-y-3">
+              <h3 className="text-[11px] font-medium text-text-muted">快速编辑</h3>
+              <select value={paper.stage} onChange={e => updateShortPaper(paper.id, { stage: e.target.value, progress: Math.round((paperStages.indexOf(e.target.value) + 1) / paperStages.length * 100) })}
+                className="w-full h-9 px-3 rounded-lg bg-white border border-gray-100 text-sm focus:border-warm-brown/30 focus:outline-none">
+                {paperStages.map(s => <option key={s}>{s}</option>)}
+              </select>
+              <div className="flex gap-2 items-center">
+                <span className="text-xs text-text-muted">进度</span>
+                <input type="range" min="0" max="100" value={paper.progress} onChange={e => updateShortPaper(paper.id, { progress: Number(e.target.value) })}
+                  className="flex-1 accent-warm-brown h-1.5" />
+                <span className="text-xs font-medium text-text-primary w-8">{paper.progress}%</span>
+              </div>
+              {paper.deadline && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-text-muted">截止日期</span>
+                  <input type="date" value={paper.deadline} onChange={e => updateShortPaper(paper.id, { deadline: e.target.value })}
+                    className="flex-1 h-9 px-3 rounded-lg bg-white border border-gray-100 text-sm focus:border-warm-brown/30 focus:outline-none" />
+                </div>
+              )}
             </div>
 
             <div className="progress-bar mb-4">

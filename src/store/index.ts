@@ -47,6 +47,7 @@ export interface AppStore {
   updateHabit: (id: string, partial: Partial<Habit>) => void;
   deleteHabit: (id: string) => void;
   toggleHabitActive: (id: string) => void;
+  reorderHabits: (habits: Habit[]) => void;
 
   // CheckIns
   checkIns: CheckIn[];
@@ -271,6 +272,7 @@ export const useStore = create<AppStore>()(
       toggleHabitActive: (id) => set((s) => ({
         habits: s.habits.map(h => h.id === id ? { ...h, active: !h.active, updatedAt: now() } : h)
       })),
+      reorderHabits: (habits) => set({ habits }),
 
       // ==================== CheckIns ====================
       addCheckIn: (c) => {

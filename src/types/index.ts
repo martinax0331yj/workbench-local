@@ -66,12 +66,17 @@ export interface Habit {
   module: ModuleType;
   templateType: CheckInTemplateType;
   frequency: HabitFrequency;
-  targetCount: number; // 每周/每日目标次数
+  targetCount: number; // 每次目标量
+  unit: string; // 计量单位 (篇/页/分钟/次/字)
   reminderTime?: string; // HH:mm
+  planTime?: string; // HH:mm 计划执行时间
   daysActive: string[]; // 生效的日期（周几）
+  needNote: boolean; // 是否需要打卡备注
   linkedGoalIds: string[];
   linkedProjectIds: string[];
   active: boolean;
+  sortOrder: number;
+  streak: number; // 连续完成天数
   createdAt: string;
   updatedAt: string;
 }
@@ -93,10 +98,14 @@ export interface CheckIn {
   quality: 1 | 2 | 3 | 4 | 5;
   // 下一步行动
   nextAction?: string;
+  // 习惯专用
+  actualCount?: number; // 实际完成量
+  note?: string; // 简短备注
+  cancelled?: boolean; // 是否取消的打卡
+  completedAt: string;
   // 证据
   evidenceIds: string[];
   notes?: string;
-  completedAt: string;
 }
 
 // ==================== 专注记录 ====================

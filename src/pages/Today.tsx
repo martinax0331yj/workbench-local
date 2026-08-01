@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store';
+import { ConfirmDialog } from '../components/common';
 import type { Task, Habit, CheckIn, CheckInTemplateType, FocusSession } from '../types';
 import {
   Star, Clock, AlertTriangle, Target, CheckCircle2, Circle,
@@ -561,6 +562,7 @@ export default function TodayPage() {
 
   const [checkInTarget, setCheckInTarget] = useState<Habit | null>(null);
   const [timeBudgetExpanded, setTimeBudgetExpanded] = useState(false);
+  const [showHabitManager, setShowHabitManager] = useState(false);
 
   // 今日任务（未完成 + 今天完成的）
   const todayTasks = useMemo(() => {
@@ -685,6 +687,7 @@ export default function TodayPage() {
               <div className="flex items-center gap-2">
                 <Target size={16} className="text-warm-brown" />
                 <h2 className="font-medium text-text-primary">今日习惯</h2>
+                <button onClick={() => setShowHabitManager(true)} className="text-xs text-warm-brown hover:underline ml-1">管理</button>
               </div>
               <span className="text-xs text-text-muted">
                 {todayHabits.filter(h => habitCheckInMap[h.id]).length}/{todayHabits.length}
@@ -825,6 +828,215 @@ export default function TodayPage() {
           <DailyReviewForm onSaved={() => {}} />
         </div>
       </div>
+
+      {/* Habit Manager Modal */}
+      {showHabitManager && <HabitManagerModal onClose={() => setShowHabitManager(false)} />}
+    </div>
+  );
+}
+
+// ==================== 习惯管理弹窗 ====================
+
+function HabitManagerModal({ onClose }: { onClose: () => void }) {
+  const { habits, addHabit, updateHabit, deleteHabit, toggleHabitActive, reorderHabits, reminderConfig } = useStore();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    title: '', description: '', module: 'academic' as Habit['module'],
+    templateType: 'literature' as CheckInTemplateType, frequency: 'daily' as Habit['frequency'],
+    targetCount: 1, unit: '次', planTime: '', needNote: false, daysActive: ['mon','tue','wed','thu','fri'],
+  });
+
+  const resetForm = () => setForm({
+    title: '', description: '', module: 'academic', templateType: 'literature',
+    frequency: 'daily', targetCount: 1, unit: '次', planTime: '', needNote: false,
+    daysActive: ['mon','tue','wed','thu','fri'],
+  });
+
+  const handleSave = () => {
+    if (!form.title.trim()) return;
+    if (editingId) {
+      updateHabit(editingId, {
+        title: form.title, description: form.description, module: form.module,
+        templateType: form.templateType, frequency: form.frequency,
+        targetCount: form.targetCount, unit: form.unit, planTime: form.planTime || undefined,
+        needNote: form.needNote, daysActive: form.daysActive,
+      });
+    } else {
+      addHabit({
+        title: form.title, description: form.description, module: form.module,
+        templateType: form.templateType, frequency: form.frequency,
+        targetCount: form.targetCount, unit: form.unit, planTime: form.planTime || undefined,
+        needNote: form.needNote, daysActive: form.daysActive,
+        linkedGoalIds: [], linkedProjectIds: [], active: true, sortOrder: habits.length,
+        streak: 0, reminderTime: undefined,
+      });
+    }
+    setEditingId(null); setShowAdd(false); resetForm();
+  };
+
+  function startEdit(h: Habit) {
+    setEditingId(h.id); setShowAdd(true);
+    setForm({
+      title: h.title, description: h.description || '', module: h.module,
+      templateType: h.templateType, frequency: h.frequency, targetCount: h.targetCount,
+      unit: h.unit, planTime: h.planTime || '', needNote: h.needNote,
+      daysActive: h.daysActive,
+    });
+  }
+
+  const sorted = [...habits].sort((a, b) => a.sortOrder - b.sortOrder);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-lg mx-4 p-6 max-h-[85vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-lg font-semibold text-text-primary">管理习惯</h2>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-text-muted"><X size={18} /></button>
+        </div>
+
+        {!showAdd ? (
+          <>
+            <button onClick={() => { setShowAdd(true); setEditingId(null); resetForm(); }}
+              className="w-full mb-4 py-2.5 rounded-xl border-2 border-dashed border-gray-200 text-sm text-text-muted hover:border-warm-brown/30 hover:text-warm-brown transition-colors flex items-center justify-center gap-1.5">
+              <Plus size={16} /> 添加新习惯
+            </button>
+
+            {sorted.length === 0 ? (
+              <p className="text-sm text-text-muted text-center py-6">暂无习惯，点击上方按钮添加</p>
+            ) : (
+              <div className="space-y-2">
+                {sorted.map((h, idx) => {
+                  const Icon = templateIcons[h.templateType] || BookOpen;
+                  return (
+                    <div key={h.id} className={`flex items-center gap-3 p-3 rounded-xl border ${h.active ? 'bg-white border-gray-100' : 'bg-gray-50/50 border-gray-100 opacity-50'}`}>
+                      <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
+                        <Icon size={14} className="text-text-muted" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-text-primary">{h.title}</p>
+                        <p className="text-xs text-text-muted">{h.targetCount}{h.unit}/{h.frequency === 'daily' ? '天' : '周'} · {h.streak}天连续</p>
+                      </div>
+                      <div className="flex items-center gap-0.5">
+                        <button onClick={() => toggleHabitActive(h.id)} className={`p-1.5 rounded-lg hover:bg-gray-100 text-xs ${h.active ? 'text-mint-green' : 'text-text-muted'}`} title={h.active ? '暂停' : '恢复'}>
+                          {h.active ? <CheckCircle2 size={14} /> : <RefreshCw size={14} />}
+                        </button>
+                        <button onClick={() => startEdit(h)} className="p-1.5 rounded-lg hover:bg-gray-100 text-text-muted" title="编辑">
+                          <Edit3 size={13} />
+                        </button>
+                        <button onClick={() => setDeleteTarget(h.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-text-muted hover:text-red-400" title="删除">
+                          <X size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <button onClick={() => { setShowAdd(false); setEditingId(null); resetForm(); }}
+                className="p-1 rounded-lg hover:bg-gray-100 text-text-muted"><ArrowRight size={16} className="rotate-180" /></button>
+              <h3 className="font-medium text-text-primary">{editingId ? '编辑习惯' : '新建习惯'}</h3>
+            </div>
+
+            <div>
+              <label className="text-xs text-text-muted block mb-1.5">习惯名称 *</label>
+              <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                placeholder="如：每日文献阅读" className="w-full h-10 px-3 rounded-xl bg-cream border border-gray-100 text-sm focus:border-warm-brown/30 focus:outline-none" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-text-muted block mb-1.5">所属领域</label>
+                <select value={form.module} onChange={e => setForm(f => ({ ...f, module: e.target.value as any }))}
+                  className="w-full h-10 px-3 rounded-xl bg-cream border border-gray-100 text-sm focus:border-warm-brown/30 focus:outline-none">
+                  <option value="academic">学术研究</option><option value="paper">论文项目</option>
+                  <option value="industry">行业研究</option><option value="learning">多语种学习</option>
+                  <option value="finance">理财</option><option value="ecommerce">电商</option>
+                  <option value="wechat">自媒体</option><option value="health">体重饮食</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-text-muted block mb-1.5">类型</label>
+                <select value={form.templateType} onChange={e => setForm(f => ({ ...f, templateType: e.target.value as any }))}
+                  className="w-full h-10 px-3 rounded-xl bg-cream border border-gray-100 text-sm focus:border-warm-brown/30 focus:outline-none">
+                  {Object.entries(templateLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-text-muted block mb-1.5">频率</label>
+                <select value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value as any }))}
+                  className="w-full h-10 px-3 rounded-xl bg-cream border border-gray-100 text-sm focus:border-warm-brown/30 focus:outline-none">
+                  <option value="daily">每天</option><option value="workday">工作日</option>
+                  <option value="weekly">每周</option><option value="custom">自定义</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-text-muted block mb-1.5">每次目标量</label>
+                <div className="flex gap-2">
+                  <input type="number" value={form.targetCount} onChange={e => setForm(f => ({ ...f, targetCount: Number(e.target.value) }))}
+                    className="flex-1 h-10 px-3 rounded-xl bg-cream border border-gray-100 text-sm focus:border-warm-brown/30 focus:outline-none" />
+                  <select value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}
+                    className="w-16 h-10 px-2 rounded-xl bg-cream border border-gray-100 text-sm focus:border-warm-brown/30 focus:outline-none">
+                    <option>次</option><option>篇</option><option>页</option><option>字</option><option>分钟</option><option>个</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-text-muted block mb-1.5">计划执行时间</label>
+              <input type="time" value={form.planTime} onChange={e => setForm(f => ({ ...f, planTime: e.target.value }))}
+                className="w-full h-10 px-3 rounded-xl bg-cream border border-gray-100 text-sm focus:border-warm-brown/30 focus:outline-none" />
+            </div>
+            <div>
+              <label className="text-xs text-text-muted block mb-1.5">生效日期</label>
+              <div className="flex flex-wrap gap-1.5">
+                {[{ v: 'mon', l: '一' }, { v: 'tue', l: '二' }, { v: 'wed', l: '三' }, { v: 'thu', l: '四' }, { v: 'fri', l: '五' }, { v: 'sat', l: '六' }, { v: 'sun', l: '日' }].map(d => (
+                  <button key={d.v} onClick={() => setForm(f => ({
+                    ...f, daysActive: f.daysActive.includes(d.v) ? f.daysActive.filter(x => x !== d.v) : [...f.daysActive, d.v]
+                  }))}
+                    className={`w-9 h-9 rounded-lg text-xs font-medium transition-colors ${form.daysActive.includes(d.v) ? 'bg-warm-brown text-white' : 'bg-gray-50 text-text-muted hover:bg-gray-100'}`}>
+                    周{d.l}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-text-muted block mb-1.5">描述</label>
+              <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                placeholder="简短描述这个习惯" className="w-full h-10 px-3 rounded-xl bg-cream border border-gray-100 text-sm focus:border-warm-brown/30 focus:outline-none" />
+            </div>
+            <div className="flex items-center gap-2">
+              <input type="checkbox" checked={form.needNote} onChange={e => setForm(f => ({ ...f, needNote: e.target.checked }))} id="needNote" className="rounded" />
+              <label htmlFor="needNote" className="text-xs text-text-muted">打卡时要求填写备注</label>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button onClick={() => { setShowAdd(false); setEditingId(null); resetForm(); }}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-text-secondary hover:bg-gray-50 transition-colors">取消</button>
+              <button onClick={handleSave}
+                className="flex-1 py-2.5 rounded-xl bg-warm-brown text-white text-sm font-medium hover:bg-warm-brown/90 transition-colors">
+                {editingId ? '保存' : '创建'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Delete Confirm */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => { if (deleteTarget) { deleteHabit(deleteTarget); setDeleteTarget(null); } }}
+        title="删除习惯"
+        message="删除后将无法恢复该习惯及其打卡历史。"
+        itemName={habits.find(h => h.id === deleteTarget)?.title}
+      />
     </div>
   );
 }
